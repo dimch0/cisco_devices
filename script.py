@@ -7,7 +7,7 @@ from xlrd import open_workbook
 
 # DEFINES:
 master_file = 'PGiMaster.xls'
-container_all_files = "/home/dzhrt/PycharmProjects/untitled/pyt/cisco_devices/PGI"
+container_all_files = "/home/dimcho/PycharmProjects/dzhrt/cis/PGI_all"
 extension = ".txt"
 version_pattern = "(^.*(REV|rev|Rev)\s\d\d+)"
 
@@ -80,6 +80,10 @@ def cisco_vs_juniper_files():
 
 
 def cisco_reader(dir_to_file):
+    """
+    :param dir_to_file: path to cisco file be checked
+    :return:  a list of tuples with PIDs and SNs: [(pid, sn), (pid, sn), (pid, sn)...]
+    """
     file_name = os.path.basename(dir_to_file).replace(extension, '')
     result = []
     with open(dir_to_file, "r") as f:
@@ -105,6 +109,10 @@ def cisco_reader(dir_to_file):
 
 
 def juniper_reader(dir_to_file):
+    """
+    :param dir_to_file: path to cisco file be checked
+    :return:  a list of tuples with PIDs and SNs: [(pid, sn), (pid, sn), (pid, sn)...]
+    """
     result = []
     with open(dir_to_file, "r") as f:
         for line in f:
@@ -127,14 +135,52 @@ def juniper_reader(dir_to_file):
     return result
 
 
+def create_dict(file_list, reader):
+    """
+    :param file_list: list of cisco or juniper files
+    :param reader: function that reads cisco or juniper files
+    :return:  a dict with the name of the file as a key and list of paris (pid, sn) for value:
+    {"file_name_1": [(pid, sn),(pid, sn),(pid, sn)...]}
+    """
+    result = {}
+    for file in file_list:
+        name = os.path.basename(file).replace(extension, '')
+        pairs = reader(file)
+        result[name] = pairs
+    return result
+
+
+def write_missing_entries(missing_names_list, all_dict, wsheet, header):
+    """
+    This function writes a sheet in excel with the missing entries from the master
+    :param missing_names_list: a list of the missing cisco or juniper entries
+    :param wsheet: the sheet in the excel file to be written
+    :param all_dict: a dict containing all the pid and SNs for cisco + juniper
+    :return:
+    """
+    missing_entries = [["SystemName", "Component", "Component Serial"]]
+    for name in all_dict.keys():
+        if name in missing_names_list:
+            missing_entries.append([name, "", ""])
+            for pid, sn in all_dict[name]:
+                missing_entries.append(["", pid, sn])
+
+    for row in range(0, len(missing_entries)):
+        for col in range(0, len(missing_entries[row])):
+            if row == 0:
+                wsheet.write(row, col, missing_entries[row][col], header)
+            else:
+                wsheet.write(row, col, missing_entries[row][col])
+    return 1
 
 
 def main():
 
     cisco_file_list, juniper_file_list = cisco_vs_juniper_files()
+    cisco_names, juniper_names, other_devices = cisco_vs_juniper_excel_entries(master_file)
+
     set_cisco_files = set([os.path.basename(a).replace(extension, '') for a in cisco_file_list])
     set_juniper_files = set([os.path.basename(a).replace(extension, '') for a in juniper_file_list])
-    cisco_names, juniper_names, other_devices = cisco_vs_juniper_excel_entries(master_file)
     set_cisco_names = set([os.path.basename(a).replace(extension, '') for a in cisco_names])
     set_juniper_names = set([os.path.basename(a).replace(extension, '') for a in juniper_names])
     missing_files_for_cisco = set_cisco_names - set_cisco_files
@@ -142,18 +188,9 @@ def main():
     missing_names_for_cisco = set_cisco_files - set_cisco_names
     missing_names_for_juniper = set_juniper_files - set_juniper_names
 
-    cisco_dict = {}
-    for file in cisco_file_list:
-        name = os.path.basename(file).replace(extension, '')
-        pairs = cisco_reader(file)
-        cisco_dict[name] = pairs
 
-
-    juniper_dict = {}
-    for file in juniper_file_list:
-        name = os.path.basename(file).replace(extension, '')
-        pairs = juniper_reader(file)
-        juniper_dict[name] = pairs
+    cisco_dict = create_dict(cisco_file_list, cisco_reader)
+    juniper_dict = create_dict(juniper_file_list, juniper_reader)
 
 
     all_dict = {}
@@ -198,37 +235,12 @@ def main():
             else:
                 worksheet.write(row, col, updated_data[row][col])
 
-    # MISSING CISCO ENTRIES
-    missing_cisco_entries = [["SystemName", "Component", "Component Serial"]]
-    for name in all_dict.keys():
-        if name in missing_names_for_cisco:
-            missing_cisco_entries.append([name, "", ""])
-            for pid, sn in all_dict[name]:
-                missing_cisco_entries.append(["", pid, sn])
+
     # WRITING MISSING CISCO ENTRIES
-    for row in range(0, len(missing_cisco_entries)):
-        for col in range(0, len(missing_cisco_entries[row])):
-            if row == 0:
-                worksheet_c.write(row, col, missing_cisco_entries[row][col], format_header)
-            else:
-                worksheet_c.write(row, col, missing_cisco_entries[row][col])
-
-    # MISSING JUNIPER ENTRIES
-    missing_juniper_entries = [["SystemName", "Component", "Component Serial"]]
-    for name in all_dict.keys():
-        if name in missing_names_for_juniper:
-            missing_juniper_entries.append([name, "", ""])
-            for pid, sn in all_dict[name]:
-                missing_juniper_entries.append(["", pid, sn])
+    write_missing_entries(missing_names_for_cisco, all_dict, worksheet_c, format_header)
     # WRITING MISSING JUNIPER ENTRIES
-    for row in range(0, len(missing_juniper_entries)):
-        for col in range(0, len(missing_juniper_entries[row])):
-            if row == 0:
-                worksheet_j.write(row, col, missing_juniper_entries[row][col], format_header)
-            else:
-                worksheet_j.write(row, col, missing_juniper_entries[row][col])
-
-
+    write_missing_entries(missing_names_for_juniper, all_dict, worksheet_j, format_header)
+    # MISSING CISCO ENTRIES
 
 
     # OTHER DEVICES CHECK
@@ -237,7 +249,7 @@ def main():
     for device in other_devices:
         if device:
             other_devices_found = True
-            print "Other devices found:", len(other_devices)
+            print "Other devices found:"
             print device
     if not other_devices_found:
         print "No other devices found"
