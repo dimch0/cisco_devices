@@ -14,7 +14,7 @@ VERSION_PATTERN = "(^.*(REV|rev|Rev)\s\d\d+)"
 
 def load_data_from_v_file(file_name):
     """
-    :param file_name:  takes the path to the excel master file
+    :param file_name: path to the excel master file
     :return: a list of lists for each row in the excel master file
     """
     wb = open_workbook(file_name)
@@ -28,7 +28,7 @@ def load_data_from_v_file(file_name):
 
 def cisco_vs_juniper_excel_entries(MASTER_FILE):
     """
-    :param file_name: takes the path to the excel master file
+    :param file_name: path to the excel master file
     :return: 3 lists for cisco, juniper and other devices,
              specified in column D from the master excelfile
     """
@@ -82,7 +82,7 @@ def cisco_vs_juniper_files():
 def cisco_reader(dir_to_file):
     """
     :param dir_to_file: path to cisco file be checked
-    :return:  a list of tuples with PIDs and SNs: [(pid, sn), (pid, sn), (pid, sn)...]
+    :return: a list of tuples with PIDs and SNs: [(pid, sn), (pid, sn), (pid, sn)...]
     """
     file_name = os.path.basename(dir_to_file).replace(EXTENSION, '')
     result = []
@@ -110,7 +110,7 @@ def cisco_reader(dir_to_file):
 
 def juniper_reader(dir_to_file):
     """
-    :param dir_to_file: path to cisco file be checked
+    :param dir_to_file: path to juniper file to be checked
     :return:  a list of tuples with PIDs and SNs: [(pid, sn), (pid, sn), (pid, sn)...]
     """
     result = []
@@ -201,8 +201,8 @@ def main():
     all_dict.update(create_dict(juniper_file_list, juniper_reader))
 
     # PREPARING TO WRITE NEW DATA
-    combined_file_name = "PGiMaster_UPDATED.xlsx"
-    workbook = xlsxwriter.Workbook(combined_file_name)
+    UPDATED_FILE_NAME = "PGiMaster_UPDATED.xlsx"
+    workbook = xlsxwriter.Workbook(UPDATED_FILE_NAME)
     worksheet = workbook.add_worksheet()
     worksheet_2 = workbook.add_worksheet("extra_cisco_files")
     worksheet_3 = workbook.add_worksheet("extra_juniper_files")
