@@ -44,8 +44,8 @@ def cisco_vs_juniper_excel_entries(MASTER_FILE):
             juniper_names.append(system_name.strip())
         else:
             other_devices.append(system_name.strip())
-
     return cisco_names, juniper_names, other_devices
+
 
 def get_all_files(path_to_folder):
     """
