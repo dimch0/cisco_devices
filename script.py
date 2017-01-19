@@ -12,12 +12,12 @@ EXTENSION = ".txt"
 VERSION_PATTERN = "(^.*(REV|rev|Rev)\s\d\d+)"
 
 
-def load_data_from_v_file(file_name):
+def load_data_from_v_file(MASTER_FILE):
     """
-    :param file_name: path to the excel master file
+    :param MASTER_FILE: path to the excel master file
     :return: a list of lists for each row in the excel master file
     """
-    wb = open_workbook(file_name)
+    wb = open_workbook(MASTER_FILE)
     first_sheet = wb.sheet_by_index(0)
     num_rows = first_sheet.nrows
     data = []
